@@ -1,0 +1,67 @@
+// SimpleDEX — A rate oracle for the Midnight DEX proof-of-concept.
+//
+// This contract stores fixed exchange rates between token pairs. An admin
+// can set rates, and anyone can look them up. The actual token swap
+// (burn source token, mint destination token) is orchestrated off-chain
+// by the SDK as separate transactions — this contract only provides the
+// authoritative rate that those transactions should use.
+//
+// This is intentionally simple: there is no AMM, no liquidity pool, and
+// no on-chain swap execution. It exists to demonstrate how a Compact
+// contract can serve as shared, verifiable state that multiple parties
+// can read during a multi-step swap workflow.
+
+pragma language_version >= 0.20.0;
+
+import CompactStandardLibrary;
+
+// The admin's public key, set once at deploy time. Only the holder of the
+// corresponding secret key can update rates.
+export sealed ledger admin: Bytes<32>;
+
+// Maps a pair identifier (derived from two token types) to an exchange rate.
+// The rate is stored as a scaled integer: e.g. 1500 means 1.500 when the
+// caller treats the last 3 digits as decimals. Scaling convention is left
+// to the SDK — the contract just stores and returns the raw value.
+export ledger rates: Map<Bytes<32>, Uint<64>>;
+
+// The caller's secret key, provided by the local prover at proof time.
+witness local_secret_key(): Bytes<32>;
+
+// Derive a public key from a secret key using a domain-separated hash.
+// This must match the derivation used when the admin key is supplied to
+// the constructor.
+pure circuit derive_public_key(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "midnight-dex:pk:"), sk]);
+}
+
+// Build a deterministic pair identifier from two token type hashes.
+// The pair key is order-dependent: (A, B) and (B, A) are different pairs,
+// allowing the admin to set directional rates.
+export pure circuit pair_key(token_a: Bytes<32>, token_b: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([token_a, token_b]);
+}
+
+constructor(admin_key: Bytes<32>) {
+  admin = disclose(admin_key);
+}
+
+// Set the exchange rate for a token pair. Only the admin can call this.
+export circuit set_rate(token_a: Bytes<32>, token_b: Bytes<32>, rate: Uint<64>): [] {
+  const sk = local_secret_key();
+  const caller = derive_public_key(sk);
+  assert(disclose(caller == admin), "SimpleDEX: caller is not admin");
+
+  assert(disclose(rate) > 0, "SimpleDEX: rate must be positive");
+
+  const key = pair_key(disclose(token_a), disclose(token_b));
+  rates.insert(key, disclose(rate));
+}
+
+// Look up the exchange rate for a token pair. Returns the rate as a raw
+// scaled integer. Reverts if no rate has been set for the pair.
+export circuit get_rate(token_a: Bytes<32>, token_b: Bytes<32>): Uint<64> {
+  const key = pair_key(disclose(token_a), disclose(token_b));
+  assert(rates.member(key), "SimpleDEX: no rate set for pair");
+  return rates.lookup(key);
+}
