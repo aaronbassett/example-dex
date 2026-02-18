@@ -10,3 +10,6 @@ export {
   executeSwap,
 } from "./contracts.js";
 export type { SwapStatus, SwapResult } from "./contracts.js";
+
+export { getBalances, fundWallet } from "./funding.js";
+export type { FundingStep, FundingStatus, TokenBalance } from "./funding.js";
