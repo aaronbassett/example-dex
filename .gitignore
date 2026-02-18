@@ -14,4 +14,4 @@ dist/
 .env.local
 
 # Compact compiler artifacts (generated from .compact source files)
-src/artifacts/
+**/src/artifacts/
