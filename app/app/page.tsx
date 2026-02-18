@@ -1,7 +1,6 @@
+import { redirect } from "next/navigation";
+
+/** The root page redirects straight to the Trade screen. */
 export default function Home() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">Midnight DEX</h1>
-    </main>
-  );
+  redirect("/trade");
 }

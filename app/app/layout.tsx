@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Header } from "@/components/header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body>{children}</body>
+      <body>
+        <Header />
+        {/* Offset content below the fixed header */}
+        <main className="mx-auto max-w-5xl px-4 pt-24 pb-12">
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
