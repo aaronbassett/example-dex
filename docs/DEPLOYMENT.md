@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide walks through deploying the SimpleDEX contract to the Midnight testnet and running the application against it.
+This guide walks through deploying the SimpleDEX contract to the Midnight preprod network and running the application against it.
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@ This guide walks through deploying the SimpleDEX contract to the Midnight testne
 - **Docker** (required for the proof server)
 - **Lace browser extension**
   - Install from: <https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk>
-  - Configure the extension for the Midnight testnet
-- **tDUST** (testnet gas tokens) from the Midnight faucet
+  - Configure the extension for the Midnight preprod network
+- **tDUST** (gas tokens) from the Midnight faucet
 
 ## 1. Start the Proof Server
 
@@ -24,7 +24,7 @@ docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0
 
 ## 2. Get tDUST from the Faucet
 
-1. Navigate to the Midnight testnet faucet: <https://faucet.testnet-02.midnight.network>
+1. Navigate to the Midnight faucet: <https://faucet.preprod.midnight.network>
 2. Enter your wallet address.
 3. Wait for the tokens to arrive. You can verify receipt via the indexer.
 
@@ -44,7 +44,7 @@ pnpm compact
 pnpm build
 ```
 
-Use `pnpm compact:fast` during development for faster iteration. A full `pnpm compact` build is required before deploying to testnet.
+Use `pnpm compact:fast` during development for faster iteration. A full `pnpm compact` build is required before deploying.
 
 ## 4. Deploy SimpleDEX
 
@@ -58,7 +58,7 @@ pnpm deploy:dex
 
 This will:
 
-1. Connect to the Midnight testnet.
+1. Connect to the Midnight preprod network.
 2. Deploy the SimpleDEX contract with your wallet as admin.
 3. Write the contract address to `packages/deploy-cli/deployed-addresses.json`.
 
@@ -92,14 +92,14 @@ Open <http://localhost:3000>, install the Lace wallet extension if you have not 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MIDNIGHT_SEED` | *(required)* | Seed phrase for the deployer/admin wallet |
-| `MIDNIGHT_RPC_URL` | `https://rpc.testnet-02.midnight.network` | Midnight node RPC endpoint |
-| `MIDNIGHT_INDEXER_URL` | `https://indexer.testnet-02.midnight.network` | Indexer GraphQL endpoint |
+| `MIDNIGHT_RPC_URL` | `https://rpc.preprod.midnight.network` | Midnight node RPC endpoint |
+| `MIDNIGHT_INDEXER_URL` | `https://indexer.preprod.midnight.network` | Indexer GraphQL endpoint |
 | `MIDNIGHT_PROOF_SERVER_URL` | `http://localhost:6300` | Local proof server URL |
 
 ## Troubleshooting
 
 - **"compact: command not found"** -- Install the Compact toolchain manager. See <https://docs.midnight.network> for instructions.
-- **"Lace wallet extension is not installed"** -- Install from the Chrome Web Store and configure it for the Midnight testnet.
+- **"Lace wallet extension is not installed"** -- Install from the Chrome Web Store and configure it for the Midnight preprod network.
 - **Proof server not running** -- Ensure Docker is running and the proof server container is up on port 6300.
 - **"No rate set for pair"** -- Run `pnpm deploy:set-rates` to seed exchange rates on the deployed contract.
 - **Build fails with polyfill errors** -- The app requires Node.js >= 22. Check your version with `node --version`.

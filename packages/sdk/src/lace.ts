@@ -22,8 +22,8 @@ import type {
 /** The well-known key under which Lace registers in window.midnight */
 const LACE_KEY = "mnLace";
 
-/** The network identifier to pass when connecting (testnet) */
-const DEFAULT_NETWORK_ID = "testnet";
+/** The network identifier to pass when connecting (Midnight preprod) */
+const DEFAULT_NETWORK_ID = "preprod";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,7 +70,7 @@ export function isLaceInstalled(): boolean {
  * If the DApp has not been authorized yet, this triggers the Lace popup
  * asking the user to approve the connection.
  *
- * @param networkId - The network to connect to (defaults to `"testnet"`).
+ * @param networkId - The network to connect to (defaults to `"preprod"`).
  * @returns The wallet address, connected API, and network configuration.
  * @throws If Lace is not installed or the user rejects the connection.
  */

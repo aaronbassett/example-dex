@@ -2,13 +2,13 @@
 
 A proof-of-concept decentralized exchange built on [Midnight](https://midnight.network), demonstrating privacy-preserving token swaps using zero-knowledge proofs.
 
-> **Status:** This is a PoC with real contract compilation, testnet deployment scripts, and Lace wallet integration. Swap execution is still mocked on the client side — the contracts compile and deploy, exchange rates can be read from on-chain state, but the full burn/mint swap flow is not yet wired end-to-end. See the TODO markers throughout the SDK package for where the remaining pieces should be integrated.
+> **Status:** This is a PoC with real contract compilation, deployment scripts, and Lace wallet integration. Swap execution is still mocked on the client side — the contracts compile and deploy, exchange rates can be read from on-chain state, but the full burn/mint swap flow is not yet wired end-to-end. See the TODO markers throughout the SDK package for where the remaining pieces should be integrated.
 
 ## Features
 
 - **Compilable Compact Smart Contracts** — SimpleDEX rate oracle and ShieldedFungibleToken contracts, compilable via `compactc`
 - **Lace Wallet Integration** — Connect and disconnect via the Lace browser extension (replaces auto-generated wallet)
-- **Deploy CLI** — Command-line scripts for deploying contracts to the Midnight testnet
+- **Deploy CLI** — Command-line scripts for deploying contracts to the Midnight preprod network
 - **On-chain Rate Reads** — Exchange rates are read from the deployed SimpleDEX ledger, with automatic fallback to mock values when a contract is not deployed
 - **Token Swaps** — Trade between tMIDN, tUSDC, and tBTC with a familiar swap interface (swap execution is mocked)
 - **Market Explorer** — Browse available trading pairs and navigate directly to trade
@@ -48,10 +48,10 @@ Compiled artifacts are written to `contracts/src/artifacts/` and re-exported thr
 
 ## Deployment
 
-Deploy contracts to the Midnight testnet using the deploy CLI:
+Deploy contracts to the Midnight preprod network using the deploy CLI:
 
 ```bash
-# Deploy SimpleDEX to testnet
+# Deploy SimpleDEX to preprod
 MIDNIGHT_SEED="your seed phrase" pnpm deploy:dex
 
 # Set initial exchange rates
@@ -89,10 +89,10 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instruction
 │   │       └── funding.ts         # Legacy mock funding (kept for reference)
 │   └── deploy-cli/      # Deployment CLI
 │       └── src/
-│           ├── deploy-dex.ts  # Deploy SimpleDEX to testnet
+│           ├── deploy-dex.ts  # Deploy SimpleDEX to preprod
 │           ├── set-rates.ts   # Set exchange rates on deployed contract
 │           ├── providers.ts   # Network provider setup
-│           └── config.ts      # Testnet configuration
+│           └── config.ts      # Preprod network configuration
 └── app/                 # Next.js frontend
     ├── app/             # Routes (trade, explore)
     ├── components/      # UI (wallet-badge, swap-card, etc.)

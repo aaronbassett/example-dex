@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Deploy the SimpleDEX contract to the Midnight testnet.
+// Deploy the SimpleDEX contract to the Midnight preprod network.
 //
 // Usage: MIDNIGHT_SEED="your seed phrase" pnpm deploy
 //
@@ -8,7 +8,7 @@
 //   - Wallet funded with tDUST for gas
 
 import { createProviders } from "./providers.js";
-import { TESTNET_CONFIG } from "./config.js";
+import { PREPROD_CONFIG } from "./config.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -20,10 +20,10 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Deploying SimpleDEX to Midnight testnet...\n");
+  console.log("Deploying SimpleDEX to Midnight preprod...\n");
 
   const providers = await createProviders({
-    ...TESTNET_CONFIG,
+    ...PREPROD_CONFIG,
     seed,
   });
 
@@ -53,7 +53,7 @@ async function main() {
     simpleDex: {
       address: contractAddress,
       deployedAt: new Date().toISOString(),
-      network: "testnet-02",
+      network: "preprod",
     },
   };
 

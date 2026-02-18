@@ -9,7 +9,7 @@
 //   - MIDNIGHT_SEED must be the admin seed used during deployment
 
 import { createProviders } from "./providers.js";
-import { TESTNET_CONFIG } from "./config.js";
+import { PREPROD_CONFIG } from "./config.js";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
@@ -76,7 +76,7 @@ async function main() {
   console.log(`Setting rates on SimpleDEX at ${dexAddress}...\n`);
 
   const providers = await createProviders({
-    ...TESTNET_CONFIG,
+    ...PREPROD_CONFIG,
     seed,
   });
 
