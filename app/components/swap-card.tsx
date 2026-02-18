@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TokenSelector } from "@/components/token-selector";
+import { useWallet } from "@/hooks/use-wallet";
 
 const tokens = DEFAULT_CONFIG.tokens;
 
@@ -35,6 +36,7 @@ const STATUS_LABELS: Record<SwapStatus, string> = {
  */
 function SwapForm() {
   const searchParams = useSearchParams();
+  const { balances } = useWallet();
 
   // Pre-select tokens from URL query params (e.g. ?from=tMIDN&to=tUSDC),
   // falling back to sensible defaults
@@ -46,6 +48,10 @@ function SwapForm() {
   const [fromAmount, setFromAmount] = useState("");
   const [status, setStatus] = useState<SwapStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+
+  // Look up the wallet balance for the currently selected from/to tokens
+  const fromBalance = balances.find((b) => b.symbol === fromSymbol);
+  const toBalance = balances.find((b) => b.symbol === toSymbol);
 
   // Calculate the output amount whenever the input or pair changes
   const outputAmount = useMemo(() => {
@@ -110,11 +116,14 @@ function SwapForm() {
   }, [fromAmount, fromSymbol, toSymbol]);
 
   const isSwapping = status !== "idle" && status !== "success" && status !== "error";
+  const parsedAmount = parseFloat(fromAmount);
+  const hasValidAmount = fromAmount !== "" && !isNaN(parsedAmount) && parsedAmount > 0;
+  const insufficientBalance =
+    hasValidAmount && fromBalance !== undefined && parsedAmount > fromBalance.balance;
   const canSwap =
     !isSwapping &&
-    fromAmount !== "" &&
-    !isNaN(parseFloat(fromAmount)) &&
-    parseFloat(fromAmount) > 0 &&
+    hasValidAmount &&
+    !insufficientBalance &&
     fromSymbol !== toSymbol;
 
   return (
@@ -122,7 +131,14 @@ function SwapForm() {
       <CardContent className="space-y-4 p-6">
         {/* --- You pay --- */}
         <div className="space-y-2">
-          <label className="text-sm text-gray-400">You pay</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-gray-400">You pay</label>
+            {fromBalance && (
+              <span className="text-xs text-gray-400">
+                Balance: {fromBalance.formatted}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3 rounded-lg bg-[var(--midnight-700)] p-3">
             <input
               type="number"
@@ -160,7 +176,14 @@ function SwapForm() {
 
         {/* --- You receive --- */}
         <div className="space-y-2">
-          <label className="text-sm text-gray-400">You receive</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-gray-400">You receive</label>
+            {toBalance && (
+              <span className="text-xs text-gray-400">
+                Balance: {toBalance.formatted}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3 rounded-lg bg-[var(--midnight-700)] p-3">
             <span className="w-full text-xl font-medium text-white">
               {outputAmount !== null
@@ -188,7 +211,7 @@ function SwapForm() {
           onClick={handleSwap}
           disabled={!canSwap}
         >
-          {STATUS_LABELS[status]}
+          {insufficientBalance ? "Insufficient balance" : STATUS_LABELS[status]}
         </Button>
 
         {/* --- Error message --- */}
