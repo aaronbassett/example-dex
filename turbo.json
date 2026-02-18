@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "compact": {
+      "outputs": ["src/artifacts/**"]
+    },
+    "compact:fast": {
+      "outputs": ["src/artifacts/**"]
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**"]
+    },
+    "dev": {
+      "persistent": true,
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["build"]
+    }
+  }
+}

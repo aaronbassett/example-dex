@@ -1,0 +1,23 @@
+{
+  "name": "midnight-example-dex",
+  "private": true,
+  "packageManager": "pnpm@10.4.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "engineStrict": true,
+  "scripts": {
+    "build": "turbo run build",
+    "build:contracts": "turbo run build --filter=@midnight-dex/contracts",
+    "build:app": "turbo run build --filter=@midnight-dex/app",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "compact": "turbo run compact",
+    "compact:fast": "turbo run compact:fast"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "turbo": "^2.6.0",
+    "typescript": "^5.8.3"
+  }
+}
