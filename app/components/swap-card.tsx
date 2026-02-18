@@ -28,6 +28,9 @@ const STATUS_LABELS: Record<SwapStatus, string> = {
   error: "Swap failed",
 };
 
+const LACE_INSTALL_URL =
+  "https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk";
+
 /**
  * Inner swap form that reads URL search params for pair pre-selection.
  *
@@ -36,7 +39,7 @@ const STATUS_LABELS: Record<SwapStatus, string> = {
  */
 function SwapForm() {
   const searchParams = useSearchParams();
-  const { balances } = useWallet();
+  const { state, connect, balances } = useWallet();
 
   // Pre-select tokens from URL query params (e.g. ?from=tMIDN&to=tUSDC),
   // falling back to sensible defaults
@@ -114,6 +117,43 @@ function SwapForm() {
     // Reset to idle after a short delay so the user sees the final status
     setTimeout(() => setStatus("idle"), 3000);
   }, [fromAmount, fromSymbol, toSymbol]);
+
+  // ── Gate: require wallet connection ──────────────────────────────
+  // Placed after all hooks to comply with the Rules of Hooks.
+  if (state.status !== "connected") {
+    return (
+      <Card className="mx-auto w-full max-w-md">
+        <CardContent className="flex flex-col items-center justify-center gap-4 p-12">
+          <p className="text-center text-gray-400">
+            Connect your Lace wallet to start trading
+          </p>
+          {state.status === "disconnected" && (
+            <Button onClick={connect}>Connect Wallet</Button>
+          )}
+          {state.status === "not-installed" && (
+            <a
+              href={LACE_INSTALL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline">Install Lace Wallet</Button>
+            </a>
+          )}
+          {state.status === "connecting" && (
+            <p className="text-sm text-gray-500">Connecting...</p>
+          )}
+          {state.status === "error" && (
+            <>
+              <p className="text-sm text-[var(--red)]">{state.error}</p>
+              <Button onClick={connect} variant="outline">
+                Try Again
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   const isSwapping = status !== "idle" && status !== "success" && status !== "error";
   const parsedAmount = parseFloat(fromAmount);
@@ -224,7 +264,7 @@ function SwapForm() {
 }
 
 /**
- * SwapCard — the main trading interface.
+ * SwapCard -- the main trading interface.
  *
  * Wraps SwapForm in a Suspense boundary because it uses useSearchParams(),
  * which Next.js 15 requires to be inside Suspense when statically rendered.
