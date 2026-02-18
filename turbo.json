@@ -20,11 +20,13 @@
     },
     "deploy": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["MIDNIGHT_SEED", "MIDNIGHT_RPC_URL", "MIDNIGHT_INDEXER_URL", "MIDNIGHT_PROOF_SERVER_URL"]
     },
     "deploy:set-rates": {
       "dependsOn": ["build"],
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["MIDNIGHT_SEED", "MIDNIGHT_RPC_URL", "MIDNIGHT_INDEXER_URL", "MIDNIGHT_PROOF_SERVER_URL"]
     }
   }
 }
