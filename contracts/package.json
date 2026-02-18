@@ -6,9 +6,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js",
-    "./dex": "./dist/dex/index.js",
-    "./token": "./dist/token/index.js"
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./dex": { "types": "./dist/dex/index.d.ts", "default": "./dist/dex/index.js" },
+    "./token": { "types": "./dist/token/index.d.ts", "default": "./dist/token/index.js" }
   },
   "scripts": {
     "compact": "compact compile src/dex/SimpleDEX.compact src/artifacts/dex/SimpleDEX && compact compile src/token/ShieldedFungibleToken.compact src/artifacts/token/ShieldedFungibleToken",
