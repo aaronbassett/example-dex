@@ -35,6 +35,12 @@ export function TokenSelector({
         {tokens.map((token) => (
           <SelectItem key={token.symbol} value={token.symbol}>
             <div className="flex items-center gap-2">
+              <img
+                src={`/tokens/${token.symbol.toLowerCase()}.svg`}
+                alt={token.symbol}
+                width={20}
+                height={20}
+              />
               <span className="font-semibold">{token.symbol}</span>
               <span className="text-xs text-gray-400">{token.name}</span>
             </div>

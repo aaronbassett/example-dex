@@ -69,7 +69,15 @@ export function TokenTable() {
               className="cursor-pointer border-b border-[var(--glass-border)] transition-colors last:border-b-0 hover:bg-[var(--midnight-700)]"
             >
               <td className="px-6 py-4 font-medium text-white">
-                {pair.pair}
+                <div className="flex items-center gap-2">
+                  <img
+                    src={`/tokens/${pair.from.toLowerCase()}.svg`}
+                    alt={pair.from}
+                    width={20}
+                    height={20}
+                  />
+                  {pair.pair}
+                </div>
               </td>
               <td className="px-6 py-4 text-white">{pair.price}</td>
               <td
