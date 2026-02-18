@@ -1,0 +1,26 @@
+{
+  "name": "@midnight-dex/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "config": {
+    "compactVersion": "+0.28.0",
+    "artifactsOutDir": "src/artifacts",
+    "artifactsStructure": "--hierarchical"
+  },
+  "scripts": {
+    "compact": "npx compactc@$npm_package_config_compactVersion $npm_package_config_artifactsStructure --out $npm_package_config_artifactsOutDir",
+    "compact:fast": "npx compactc@$npm_package_config_compactVersion --skip-zk $npm_package_config_artifactsStructure --out $npm_package_config_artifactsOutDir",
+    "build": "pnpm run compact",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.14.0",
+    "@midnight-ntwrk/midnight-js-network-id": "3.0.0",
+    "@midnight-ntwrk/zswap": "4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  }
+}
