@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "config": {
-    "compactVersion": "+0.28.0",
-    "artifactsOutDir": "src/artifacts",
-    "artifactsStructure": "--hierarchical"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./dex": { "types": "./dist/dex/index.d.ts", "default": "./dist/dex/index.js" },
+    "./token": { "types": "./dist/token/index.d.ts", "default": "./dist/token/index.js" }
   },
   "scripts": {
-    "compact": "npx compactc@$npm_package_config_compactVersion $npm_package_config_artifactsStructure --out $npm_package_config_artifactsOutDir",
-    "compact:fast": "npx compactc@$npm_package_config_compactVersion --skip-zk $npm_package_config_artifactsStructure --out $npm_package_config_artifactsOutDir",
-    "build": "pnpm run compact",
+    "compact": "compact compile src/dex/SimpleDEX.compact src/artifacts/dex/SimpleDEX && compact compile src/token/ShieldedFungibleToken.compact src/artifacts/token/ShieldedFungibleToken",
+    "compact:fast": "compact compile --skip-zk src/dex/SimpleDEX.compact src/artifacts/dex/SimpleDEX && compact compile --skip-zk src/token/ShieldedFungibleToken.compact src/artifacts/token/ShieldedFungibleToken",
+    "build": "pnpm run compact && tsc",
     "test": "vitest run"
   },
   "dependencies": {

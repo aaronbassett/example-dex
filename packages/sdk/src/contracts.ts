@@ -1,11 +1,14 @@
 /**
  * Contract interaction helpers for the SimpleDEX.
  *
- * Every function in this module is a mock that simulates what the real
- * Midnight SDK calls would look like. The mock delays approximate the
- * latency of ZK proof generation and on-chain confirmation so the UI
+ * Rate lookups attempt to read from the deployed on-chain contract first,
+ * falling back to hardcoded mock rates when the contract is not yet
+ * available. The swap execution is still fully mocked — it simulates
+ * the ZK proof generation and on-chain confirmation latency so the UI
  * can be wired up before the contracts are deployed.
  */
+
+import { readOnChainRate } from "./contract-reader.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,15 +36,14 @@ export interface SwapResult {
 // Exchange rates
 // ---------------------------------------------------------------------------
 
+/** Rate scaling factor matching the deploy-cli's set-rates.ts. */
+const RATE_SCALE = 1_000_000;
+
 /**
- * Hardcoded exchange rates between token pairs.
- *
- * TODO: Replace with a live call to the SimpleDEX contract.
- * The real implementation would call the `getExchangeRate` circuit
- * on the deployed SimpleDEX contract and read the on-chain rate
- * from the ledger state.
+ * Mock exchange rates used as a fallback when the on-chain contract
+ * is not yet deployed or the indexer is unreachable.
  */
-const RATES: Record<string, number> = {
+const MOCK_RATES: Record<string, number> = {
   "tMIDN/tUSDC": 1800,
   "tUSDC/tMIDN": 1 / 1800,
   "tMIDN/tBTC": 0.02667,
@@ -53,14 +55,31 @@ const RATES: Record<string, number> = {
 /**
  * Look up the exchange rate between two tokens.
  *
+ * Tries to read the rate from the deployed SimpleDEX contract first
+ * (if `config` is provided with a real contract address). Falls back
+ * to hardcoded mock rates when the on-chain read is unavailable.
+ *
  * @returns The rate, or `null` if the pair is not supported.
  */
-export function getExchangeRate(
+export async function getExchangeRate(
   fromSymbol: string,
   toSymbol: string,
-): number | null {
+  config?: { indexerUrl: string; dexContractAddress: string },
+): Promise<number | null> {
   if (fromSymbol === toSymbol) return 1;
-  return RATES[`${fromSymbol}/${toSymbol}`] ?? null;
+
+  // Try reading from on-chain if config is provided and address is real
+  if (config?.dexContractAddress && !config.dexContractAddress.includes("PLACEHOLDER")) {
+    try {
+      const rate = await readOnChainRate(fromSymbol, toSymbol, config);
+      if (rate !== null) return Number(rate) / RATE_SCALE;
+    } catch {
+      // Fall through to mock
+    }
+  }
+
+  // Fallback to mock rates
+  return MOCK_RATES[`${fromSymbol}/${toSymbol}`] ?? null;
 }
 
 /**
@@ -68,12 +87,13 @@ export function getExchangeRate(
  *
  * @returns The output amount, or `null` if the pair has no rate.
  */
-export function calculateSwapOutput(
+export async function calculateSwapOutput(
   inputAmount: number,
   fromSymbol: string,
   toSymbol: string,
-): number | null {
-  const rate = getExchangeRate(fromSymbol, toSymbol);
+  config?: { indexerUrl: string; dexContractAddress: string },
+): Promise<number | null> {
+  const rate = await getExchangeRate(fromSymbol, toSymbol, config);
   if (rate === null) return null;
   return inputAmount * rate;
 }
@@ -123,7 +143,7 @@ export async function executeSwap(
   inputAmount: number,
   onStatusChange?: (status: SwapStatus) => void,
 ): Promise<SwapResult> {
-  const outputAmount = calculateSwapOutput(inputAmount, fromToken, toToken);
+  const outputAmount = await calculateSwapOutput(inputAmount, fromToken, toToken);
   if (outputAmount === null) {
     onStatusChange?.("error");
     return {

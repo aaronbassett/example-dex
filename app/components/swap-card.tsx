@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, Suspense } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowDownUp } from "lucide-react";
 import {
@@ -28,6 +28,9 @@ const STATUS_LABELS: Record<SwapStatus, string> = {
   error: "Swap failed",
 };
 
+const LACE_INSTALL_URL =
+  "https://chromewebstore.google.com/detail/lace/gafhhkghbfjjkeiendhlofajokpaflmk";
+
 /**
  * Inner swap form that reads URL search params for pair pre-selection.
  *
@@ -36,7 +39,7 @@ const STATUS_LABELS: Record<SwapStatus, string> = {
  */
 function SwapForm() {
   const searchParams = useSearchParams();
-  const { balances } = useWallet();
+  const { state, connect, balances } = useWallet();
 
   // Pre-select tokens from URL query params (e.g. ?from=tMIDN&to=tUSDC),
   // falling back to sensible defaults
@@ -53,18 +56,51 @@ function SwapForm() {
   const fromBalance = balances.find((b) => b.symbol === fromSymbol);
   const toBalance = balances.find((b) => b.symbol === toSymbol);
 
-  // Calculate the output amount whenever the input or pair changes
-  const outputAmount = useMemo(() => {
+  // Calculate the output amount whenever the input or pair changes (async)
+  const [outputAmount, setOutputAmount] = useState<number | null>(null);
+
+  useEffect(() => {
     const parsed = parseFloat(fromAmount);
-    if (!fromAmount || isNaN(parsed) || parsed <= 0) return null;
-    return calculateSwapOutput(parsed, fromSymbol, toSymbol);
+    if (!fromAmount || isNaN(parsed) || parsed <= 0) {
+      setOutputAmount(null);
+      return;
+    }
+
+    let cancelled = false;
+    calculateSwapOutput(parsed, fromSymbol, toSymbol).then((result) => {
+      if (!cancelled) setOutputAmount(result);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fromAmount, fromSymbol, toSymbol]);
 
   // Format the exchange rate for display (e.g. "1 tMIDN = 1,800 tUSDC")
-  const rateDisplay = useMemo(() => {
-    const rate = getExchangeRate(fromSymbol, toSymbol);
-    if (rate === null || fromSymbol === toSymbol) return null;
-    return `1 ${fromSymbol} = ${rate.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${toSymbol}`;
+  const [rateDisplay, setRateDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fromSymbol === toSymbol) {
+      setRateDisplay(null);
+      return;
+    }
+
+    let cancelled = false;
+    getExchangeRate(fromSymbol, toSymbol).then((rate) => {
+      if (!cancelled) {
+        if (rate === null) {
+          setRateDisplay(null);
+        } else {
+          setRateDisplay(
+            `1 ${fromSymbol} = ${rate.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${toSymbol}`,
+          );
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fromSymbol, toSymbol]);
 
   /** Swap the from/to tokens (and clear the input). */
@@ -114,6 +150,43 @@ function SwapForm() {
     // Reset to idle after a short delay so the user sees the final status
     setTimeout(() => setStatus("idle"), 3000);
   }, [fromAmount, fromSymbol, toSymbol]);
+
+  // ── Gate: require wallet connection ──────────────────────────────
+  // Placed after all hooks to comply with the Rules of Hooks.
+  if (state.status !== "connected") {
+    return (
+      <Card className="mx-auto w-full max-w-md">
+        <CardContent className="flex flex-col items-center justify-center gap-4 p-12">
+          <p className="text-center text-gray-400">
+            Connect your Lace wallet to start trading
+          </p>
+          {state.status === "disconnected" && (
+            <Button onClick={connect}>Connect Wallet</Button>
+          )}
+          {state.status === "not-installed" && (
+            <a
+              href={LACE_INSTALL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline">Install Lace Wallet</Button>
+            </a>
+          )}
+          {state.status === "connecting" && (
+            <p className="text-sm text-gray-500">Connecting...</p>
+          )}
+          {state.status === "error" && (
+            <>
+              <p className="text-sm text-[var(--red)]">{state.error}</p>
+              <Button onClick={connect} variant="outline">
+                Try Again
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   const isSwapping = status !== "idle" && status !== "success" && status !== "error";
   const parsedAmount = parseFloat(fromAmount);
@@ -224,7 +297,7 @@ function SwapForm() {
 }
 
 /**
- * SwapCard — the main trading interface.
+ * SwapCard -- the main trading interface.
  *
  * Wraps SwapForm in a Suspense boundary because it uses useSearchParams(),
  * which Next.js 15 requires to be inside Suspense when statically rendered.

@@ -9,13 +9,11 @@ import {
   type ReactNode,
 } from "react";
 import {
-  hasExistingWallet,
-  loadOrCreateWallet,
-  resetWallet as sdkResetWallet,
-  fundWallet,
-  getBalances,
-  type DexWallet,
-  type FundingStatus,
+  isLaceInstalled,
+  connectLace,
+  disconnectLace,
+  DEFAULT_CONFIG,
+  type WalletState,
   type TokenBalance,
 } from "@midnight-dex/sdk";
 
@@ -24,18 +22,14 @@ import {
 // ---------------------------------------------------------------------------
 
 interface WalletContextValue {
-  /** The loaded wallet, or null while hydrating / before creation. */
-  wallet: DexWallet | null;
-  /** True during the initial client-side wallet load. */
-  isLoading: boolean;
-  /** True while the first-time funding flow is in progress. */
-  isOnboarding: boolean;
-  /** Current funding progress (only meaningful during onboarding). */
-  fundingStatus: FundingStatus | null;
-  /** Token balances after funding completes. */
+  /** Current wallet connection state. */
+  state: WalletState;
+  /** Initiate a Lace wallet connection. */
+  connect: () => Promise<void>;
+  /** Disconnect from Lace and clear local state. */
+  disconnect: () => void;
+  /** Token balances (populated after a successful connection). */
   balances: TokenBalance[];
-  /** Wipe the wallet from localStorage and reload the page. */
-  resetWallet: () => void;
 }
 
 export const WalletContext = createContext<WalletContextValue | null>(null);
@@ -45,78 +39,69 @@ export const WalletContext = createContext<WalletContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 /**
- * WalletProvider handles the full wallet lifecycle:
+ * WalletProvider manages the Lace wallet connection lifecycle.
  *
- * 1. On mount (client only), check if a wallet already exists.
- * 2. Load or create one via the SDK.
- * 3. If this is a brand-new wallet, kick off the funding flow so
- *    the user gets testnet tokens automatically.
- * 4. Once funding completes, fetch balances.
- *
- * The provider exposes all of this state so child components can
- * render loading/onboarding UI and wallet info.
+ * 1. On mount, checks whether the Lace extension is installed.
+ * 2. Exposes `connect()` which calls `connectLace()` from the SDK.
+ * 3. Exposes `disconnect()` which clears local state.
+ * 4. After connection, provides mock balances (to be replaced with
+ *    real on-chain reads in a later task).
  */
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const [wallet, setWallet] = useState<DexWallet | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isOnboarding, setIsOnboarding] = useState(false);
-  const [fundingStatus, setFundingStatus] = useState<FundingStatus | null>(null);
+  const [state, setState] = useState<WalletState>({ status: "disconnected" });
   const [balances, setBalances] = useState<TokenBalance[]>([]);
 
-  // Run once on mount (client only) to load/create the wallet
+  // On mount, check if Lace is installed
   useEffect(() => {
-    const isExisting = hasExistingWallet();
-    const loaded = loadOrCreateWallet();
-
-    if (!loaded) {
-      // SSR or no window — shouldn't happen inside a client component,
-      // but guard just in case
-      setIsLoading(false);
-      return;
-    }
-
-    setWallet(loaded);
-    setIsLoading(false);
-
-    // First-time user: fund the wallet with testnet tokens
-    if (!isExisting) {
-      setIsOnboarding(true);
-
-      fundWallet(loaded, (status) => {
-        setFundingStatus(status);
-
-        if (status.step === "complete") {
-          // Funding finished — load balances and dismiss onboarding
-          setBalances(getBalances(loaded));
-          setIsOnboarding(false);
-        }
-
-        if (status.step === "error") {
-          setIsOnboarding(false);
-        }
-      });
-    } else {
-      // Returning user: balances are already available
-      setBalances(getBalances(loaded));
+    if (!isLaceInstalled()) {
+      setState({ status: "not-installed" });
     }
   }, []);
 
-  const resetWallet = useCallback(() => {
-    sdkResetWallet();
-    // Force a full reload so every component re-initialises
-    window.location.reload();
+  const connect = useCallback(async () => {
+    setState({ status: "connecting" });
+    try {
+      const { address, connectedApi } = await connectLace();
+      setState({ status: "connected", address, connectedApi });
+
+      // Load mock balances for now (will be replaced with real reads later)
+      const mockBalances: TokenBalance[] = DEFAULT_CONFIG.tokens.map(
+        (token) => {
+          const amounts: Record<string, number> = {
+            tMIDN: 1000,
+            tUSDC: 5000,
+            tBTC: 0.5,
+          };
+          const balance = amounts[token.symbol] ?? 0;
+          return {
+            symbol: token.symbol,
+            balance,
+            formatted: balance.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 6,
+            }),
+          };
+        },
+      );
+      setBalances(mockBalances);
+    } catch (err) {
+      setState({
+        status: "error",
+        error:
+          err instanceof Error ? err.message : "Failed to connect wallet",
+      });
+    }
+  }, []);
+
+  const disconnect = useCallback(() => {
+    disconnectLace();
+    setState({ status: "disconnected" });
+    setBalances([]);
   }, []);
 
   const value = useMemo<WalletContextValue>(
-    () => ({
-      wallet,
-      isLoading,
-      isOnboarding,
-      fundingStatus,
-      balances,
-      resetWallet,
-    }),
-    [wallet, isLoading, isOnboarding, fundingStatus, balances, resetWallet],
+    () => ({ state, connect, disconnect, balances }),
+    [state, connect, disconnect, balances],
   );
 
   return (

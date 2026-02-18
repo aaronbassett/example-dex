@@ -17,6 +17,14 @@
     },
     "test": {
       "dependsOn": ["build"]
+    },
+    "deploy": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "deploy:set-rates": {
+      "dependsOn": ["build"],
+      "cache": false
     }
   }
 }
