@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Midnight Apps Contracts v0.0.1-alpha.0 (shielded-token/openzeppelin/ShieldedERC20.compact)
+
+pragma language_version >= 0.20.0;
+
+module ShieldedERC20 { // DO NOT USE IN PRODUCTION!
+  import {
+    ShieldedCoinInfo,
+    ShieldedSendResult,
+    sendImmediateShielded,
+    mintShieldedToken,
+    shieldedBurnAddress,
+    ZswapCoinPublicKey,
+    ContractAddress,
+    Either,
+    left,
+    ownPublicKey,
+    receiveShielded,
+    evolveNonce,
+    upgradeFromTransient,
+    Counter
+  } from CompactStandardLibrary;
+  import { isKeyOrAddressZero } from "./Utils";
+
+  export ledger _counter: Counter;
+  export ledger _nonce: Bytes<32>;
+  export ledger _totalSupply: Uint<128>;
+  export sealed ledger _domain: Bytes<32>;
+  export sealed ledger _name: Opaque<"string">;
+  export sealed ledger _symbol: Opaque<"string">;
+  export sealed ledger _decimals: Uint<8>;
+  export ledger _type: Bytes<32>;
+
+  export circuit initialize(
+    initNonce: Bytes<32>,
+    name_: Opaque<"string">,
+    symbol_: Opaque<"string">,
+    decimals_: Uint<8>,
+    domain_: Bytes<32>
+  ): [] {
+    _nonce = disclose(initNonce);
+    _domain = disclose(domain_);
+    _name = disclose(name_);
+    _symbol = disclose(symbol_);
+    _decimals = disclose(decimals_);
+  }
+
+  export circuit name(): Opaque<"string"> {
+    return _name;
+  }
+
+  export circuit symbol(): Opaque<"string"> {
+    return _symbol;
+  }
+
+  export circuit decimals(): Uint<8> {
+    return _decimals;
+  }
+
+  export circuit tokenType(): Bytes<32> {
+    return _type;
+  }
+
+  export circuit totalSupply(): Uint<128> {
+    return _totalSupply;
+  }
+
+  export circuit mint(recipient: Either<ZswapCoinPublicKey, ContractAddress>, amount: Uint<64>): ShieldedCoinInfo {
+    assert(!isKeyOrAddressZero(recipient), "ShieldedToken: invalid recipient");
+    _counter.increment(1);
+    const newNonce = evolveNonce(_counter, _nonce);
+    _nonce = newNonce;
+    const ret = mintShieldedToken(_domain, disclose(amount), _nonce, disclose(recipient));
+    if (isZero(_type)) {
+      _type = ret.color;
+    }
+    _totalSupply = _totalSupply + disclose(amount) as Uint<128>;
+    return ret;
+  }
+
+  circuit isZero(a: Bytes<32>): Boolean {
+    return a == pad(32, '');
+  }
+
+  export circuit burn(coin: ShieldedCoinInfo, amount: Uint<128>): ShieldedSendResult {
+    assert(coin.color == _type, "ShieldedToken: token not created from this contract");
+    assert(coin.value >= amount, "ShieldedToken: insufficient token amount to burn");
+    receiveShielded(disclose(coin));
+    _totalSupply = _totalSupply - disclose(amount);
+    const sendRes = sendImmediateShielded(disclose(coin), shieldedBurnAddress(), disclose(amount));
+    if (sendRes.change.is_some) {
+      const caller = left<ZswapCoinPublicKey, ContractAddress>(ownPublicKey());
+      sendImmediateShielded(sendRes.change.value, caller, sendRes.change.value.value);
+    }
+    return sendRes;
+  }
+}

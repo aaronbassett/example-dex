@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Midnight Apps Contracts v0.0.1-alpha.0 (shielded-token/openzeppelin/Utils.compact)
+
+pragma language_version >= 0.20.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit isKeyOrAddressZero(keyOrAddress: Either<ZswapCoinPublicKey, ContractAddress>): Boolean {
+    if (keyOrAddress.is_left) {
+      return keyOrAddress == eitherZeroZPK();
+    } else {
+      return keyOrAddress == eitherZeroContractAddress();
+    }
+  }
+
+  export pure circuit zeroBytes(): Bytes<32> {
+    return pad(32, "");
+  }
+
+  export pure circuit zeroZPK(): ZswapCoinPublicKey {
+    return ZswapCoinPublicKey { bytes: zeroBytes() };
+  }
+
+  export circuit callerZPK(): ZswapCoinPublicKey {
+    return ownPublicKey();
+  }
+
+  export circuit thisAddress(): ContractAddress {
+    return kernel.self();
+  }
+
+  export circuit eitherCaller(): Either<ZswapCoinPublicKey, ContractAddress> {
+    return left<ZswapCoinPublicKey, ContractAddress>(callerZPK());
+  }
+
+  export pure circuit eitherZeroZPK(): Either<ZswapCoinPublicKey, ContractAddress> {
+    return left<ZswapCoinPublicKey, ContractAddress>(zeroZPK());
+  }
+
+  export pure circuit eitherZeroContractAddress(): Either<ZswapCoinPublicKey, ContractAddress> {
+    return right<ZswapCoinPublicKey, ContractAddress>(ContractAddress { zeroBytes() });
+  }
+
+  export circuit eitherZPK(pk: ZswapCoinPublicKey): Either<ZswapCoinPublicKey, ContractAddress> {
+    return left<ZswapCoinPublicKey, ContractAddress>(pk);
+  }
+
+  export circuit eitherThisAddress(): Either<ZswapCoinPublicKey, ContractAddress> {
+    return right<ZswapCoinPublicKey, ContractAddress>(thisAddress());
+  }
+}
