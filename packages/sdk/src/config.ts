@@ -6,6 +6,35 @@
  * (network URLs, decimals, etc.) mirrors what a production DEX would need.
  */
 
+// ---------------------------------------------------------------------------
+// Network configuration
+// ---------------------------------------------------------------------------
+
+/**
+ * Connection details for a Midnight network node.
+ *
+ * When a Lace wallet is connected, its `Configuration` object provides
+ * `indexerUri`, `substrateNodeUri`, and `proofServerUri` — those values
+ * can be used to populate a `NetworkConfig` at runtime instead of relying
+ * on the baked-in defaults below.
+ */
+export interface NetworkConfig {
+  indexerUrl: string;
+  nodeUrl: string;
+  proofServerUrl: string;
+}
+
+/** Testnet-02 endpoints — the current active Midnight testnet. */
+export const DEFAULT_NETWORK_CONFIG: NetworkConfig = {
+  indexerUrl: "https://indexer.testnet-02.midnight.network/api/v1/graphql",
+  nodeUrl: "wss://rpc.testnet-02.midnight.network",
+  proofServerUrl: "https://proof.testnet-02.midnight.network",
+};
+
+// ---------------------------------------------------------------------------
+// Token & DEX configuration
+// ---------------------------------------------------------------------------
+
 export interface TokenConfig {
   name: string;
   symbol: string;
@@ -31,9 +60,9 @@ export interface DexConfig {
  * after the contracts are deployed to the Midnight testnet.
  */
 export const DEFAULT_CONFIG: DexConfig = {
-  networkId: "testnet",
-  rpcUrl: "https://rpc.testnet.midnight.network",
-  indexerUrl: "https://indexer.testnet.midnight.network",
+  networkId: "testnet-02",
+  rpcUrl: DEFAULT_NETWORK_CONFIG.nodeUrl,
+  indexerUrl: DEFAULT_NETWORK_CONFIG.indexerUrl,
   dexContractAddress: "0x_DEX_CONTRACT_PLACEHOLDER",
   tokens: [
     {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, Suspense } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowDownUp } from "lucide-react";
 import {
@@ -56,18 +56,51 @@ function SwapForm() {
   const fromBalance = balances.find((b) => b.symbol === fromSymbol);
   const toBalance = balances.find((b) => b.symbol === toSymbol);
 
-  // Calculate the output amount whenever the input or pair changes
-  const outputAmount = useMemo(() => {
+  // Calculate the output amount whenever the input or pair changes (async)
+  const [outputAmount, setOutputAmount] = useState<number | null>(null);
+
+  useEffect(() => {
     const parsed = parseFloat(fromAmount);
-    if (!fromAmount || isNaN(parsed) || parsed <= 0) return null;
-    return calculateSwapOutput(parsed, fromSymbol, toSymbol);
+    if (!fromAmount || isNaN(parsed) || parsed <= 0) {
+      setOutputAmount(null);
+      return;
+    }
+
+    let cancelled = false;
+    calculateSwapOutput(parsed, fromSymbol, toSymbol).then((result) => {
+      if (!cancelled) setOutputAmount(result);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fromAmount, fromSymbol, toSymbol]);
 
   // Format the exchange rate for display (e.g. "1 tMIDN = 1,800 tUSDC")
-  const rateDisplay = useMemo(() => {
-    const rate = getExchangeRate(fromSymbol, toSymbol);
-    if (rate === null || fromSymbol === toSymbol) return null;
-    return `1 ${fromSymbol} = ${rate.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${toSymbol}`;
+  const [rateDisplay, setRateDisplay] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fromSymbol === toSymbol) {
+      setRateDisplay(null);
+      return;
+    }
+
+    let cancelled = false;
+    getExchangeRate(fromSymbol, toSymbol).then((rate) => {
+      if (!cancelled) {
+        if (rate === null) {
+          setRateDisplay(null);
+        } else {
+          setRateDisplay(
+            `1 ${fromSymbol} = ${rate.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${toSymbol}`,
+          );
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [fromSymbol, toSymbol]);
 
   /** Swap the from/to tokens (and clear the input). */
