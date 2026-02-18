@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+/*
+ * Midnight DEX brand palette.
+ *
+ * Dark-only theme built around deep blue-grey tones with a vibrant
+ * purple accent. The glass-morphism tokens (--glass-bg, --glass-border)
+ * are used on cards and overlays throughout the app.
+ */
+:root {
+  --midnight-900: #0a0e1a;
+  --midnight-800: #0f1525;
+  --midnight-700: #141928;
+  --midnight-600: #1e2438;
+  --midnight-500: #2a3150;
+
+  --accent: #7c3aed;
+  --accent-light: #a78bfa;
+  --accent-glow: rgba(124, 58, 237, 0.2);
+
+  --teal: #06b6d4;
+  --red: #ef4444;
+
+  --glass-bg: rgba(20, 25, 40, 0.6);
+  --glass-border: rgba(167, 139, 250, 0.15);
+}
+
+/* Base body styles — dark background, light text, smooth font rendering */
+body {
+  background-color: var(--midnight-900);
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
